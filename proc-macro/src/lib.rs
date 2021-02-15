@@ -20,7 +20,7 @@ mod call;
 mod event;
 mod module;
 mod store;
-mod test;
+// mod test;
 mod utils;
 
 use proc_macro::TokenStream;
@@ -153,8 +153,8 @@ fn store(s: Structure) -> TokenStream {
     store::store(s).into()
 }
 
-#[proc_macro]
-#[proc_macro_error]
-pub fn subxt_test(input: TokenStream) -> TokenStream {
-    test::test(input.into()).into()
-}
+// #[proc_macro]
+// #[proc_macro_error]
+// pub fn subxt_test(input: TokenStream) -> TokenStream {
+//     test::test(input.into()).into()
+// }

@@ -35,6 +35,7 @@ use sp_runtime::traits::{
     Member,
 };
 use std::fmt::Debug;
+use jsonrpsee_types::traits::Client as JsonRpcClient;
 
 /// The subset of the `pallet_balances::Trait` that a client must implement.
 #[module]

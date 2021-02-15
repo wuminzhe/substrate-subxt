@@ -28,8 +28,8 @@ integration-tests = []
 log = "0.4.13"
 thiserror = "1.0.23"
 futures = "0.3.10"
-jsonrpsee-types = { git = "https://github.com/paritytech/jsonrpsee" }
-jsonrpsee-ws-client = { git = "https://github.com/paritytech/jsonrpsee" }
+jsonrpsee-types = { git = "https://github.com/paritytech/jsonrpsee", branch = "na-client-trait" }
+jsonrpsee-ws-client = { git = "https://github.com/paritytech/jsonrpsee", branch = "na-client-trait" }
 num-traits = { version = "0.2.14", default-features = false }
 serde = { version = "1.0.119", features = ["derive"] }
 serde_json = "1.0.61"

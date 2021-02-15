@@ -28,6 +28,7 @@ use synstructure::Structure;
 
 pub fn call(s: Structure) -> TokenStream {
     let subxt = utils::use_crate("substrate-subxt");
+    let jsonrpsee = utils::use_crate("jsonrpsee-types");
     let ident = &s.ast().ident;
     let generics = &s.ast().generics;
     let params = utils::type_params(generics);
@@ -75,7 +76,7 @@ pub fn call(s: Structure) -> TokenStream {
             ) -> core::pin::Pin<Box<dyn core::future::Future<Output = Result<#subxt::ExtrinsicSuccess<T>, #subxt::Error>> + Send + 'a>>;
         }
 
-        impl<T: #subxt::Runtime + #module> #call_trait<T> for #subxt::Client<T>
+        impl<T: #subxt::Runtime + C: #jsonrpsee::traits::Client + #module> #call_trait<T> for #subxt::Client<T, C>
         where
             <<T::Extra as #subxt::SignedExtra<T>>::Extra as #subxt::SignedExtension>::AdditionalSigned: Send + Sync,
         {

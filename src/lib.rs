@@ -1,5 +1,4 @@
-// Copyright 2019-2020 Parity Technologies (UK) Ltd.
-// This file is part of substrate-subxt.
+
 //
 // subxt is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -51,6 +50,7 @@ pub use sp_runtime;
 
 use codec::Decode;
 use futures::future;
+use jsonrpsee_types::{error::Error as JsonRpcError, traits::Client as JsonRpcClient};
 use jsonrpsee_ws_client::{
     WsClient,
     WsConfig,
@@ -67,6 +67,7 @@ use sp_core::{
 pub use sp_runtime::traits::SignedExtension;
 pub use sp_version::RuntimeVersion;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 mod error;
 mod events;
@@ -118,14 +119,14 @@ use crate::{
 
 /// ClientBuilder for constructing a Client.
 #[derive(Default)]
-pub struct ClientBuilder<T: Runtime> {
+pub struct ClientBuilder<T, C> {
     _marker: std::marker::PhantomData<T>,
     url: Option<String>,
-    client: Option<WsClient>,
+    client: Option<C>,
     page_size: Option<u32>,
 }
 
-impl<T: Runtime> ClientBuilder<T> {
+impl<T: Runtime, C: JsonRpcClient> ClientBuilder<T, C> {
     /// Creates a new ClientBuilder.
     pub fn new() -> Self {
         Self {
@@ -134,6 +135,11 @@ impl<T: Runtime> ClientBuilder<T> {
             client: None,
             page_size: None,
         }
+    }
+
+    fn set_client(mut self, client: C) -> Self {
+        self.client = Some(client);
+        self
     }
 
     /// Sets the client to use an embedded substrate node instead of `jsonrpsee::Client`.
@@ -154,14 +160,9 @@ impl<T: Runtime> ClientBuilder<T> {
     }
 
     /// Creates a new Client.
-    pub async fn build(self) -> Result<Client<T>, Error> {
-        let client = if let Some(client) = self.client {
-            client
-        } else {
-            let url = self.url.as_deref().unwrap_or("ws://127.0.0.1:9944");
-            WsClient::new(url, WsConfig::default()).await?
-        };
-        let rpc = Rpc::new(client);
+    pub async fn build(self) -> Result<Client<T, C>, Error> {
+        let client = self.client.ok_or_else(|| Error::Custom("Client not configured".into()))?;
+        let rpc = Rpc::new(Arc::new(self.client));
         let (metadata, genesis_hash, runtime_version, properties) = future::join4(
             rpc.metadata(),
             rpc.genesis_hash(),
@@ -182,8 +183,8 @@ impl<T: Runtime> ClientBuilder<T> {
 }
 
 /// Client to interface with a substrate node.
-pub struct Client<T: Runtime> {
-    rpc: Rpc<T>,
+pub struct Client<T: Runtime, JC: JsonRpcClient> {
+    rpc: Rpc<T, JC>,
     genesis_hash: T::Hash,
     metadata: Metadata,
     properties: SystemProperties,
@@ -192,7 +193,7 @@ pub struct Client<T: Runtime> {
     page_size: u32,
 }
 
-impl<T: Runtime> Clone for Client<T> {
+impl<T: Runtime, JC: JsonRpcClient> Clone for Client<T, JC> {
     fn clone(&self) -> Self {
         Self {
             rpc: self.rpc.clone(),
@@ -207,8 +208,8 @@ impl<T: Runtime> Clone for Client<T> {
 }
 
 /// Iterates over key value pairs in a map.
-pub struct KeyIter<T: Runtime, F: Store<T>> {
-    client: Client<T>,
+pub struct KeyIter<T: Runtime, F, JC: JsonRpcClient> {
+    client: Client<T, JC>,
     _marker: PhantomData<F>,
     count: u32,
     hash: T::Hash,
@@ -216,7 +217,7 @@ pub struct KeyIter<T: Runtime, F: Store<T>> {
     buffer: Vec<(StorageKey, StorageData)>,
 }
 
-impl<T: Runtime, F: Store<T>> KeyIter<T, F> {
+impl<T: Runtime, F: Store<T>, JC: JsonRpcClient> KeyIter<T, F, JC> {
     /// Returns the next key value pair from a map.
     pub async fn next(&mut self) -> Result<Option<(StorageKey, F::Returns)>, Error> {
         loop {
@@ -252,7 +253,7 @@ impl<T: Runtime, F: Store<T>> KeyIter<T, F> {
     }
 }
 
-impl<T: Runtime> Client<T> {
+impl<T: Runtime, JC: JsonRpcClient> Client<T, JC> {
     /// Returns the genesis hash.
     pub fn genesis(&self) -> &T::Hash {
         &self.genesis_hash

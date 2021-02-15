@@ -67,6 +67,7 @@ fn parse_returns_attr(attr: &syn::Attribute) -> Option<(syn::Type, syn::Type, bo
 
 pub fn store(s: Structure) -> TokenStream {
     let subxt = utils::use_crate("substrate-subxt");
+    let jsonrpsee = utils::use_crate("jsonrpsee-types");
     let ident = &s.ast().ident;
     let generics = &s.ast().generics;
     let params = utils::type_params(generics);
@@ -111,7 +112,7 @@ pub fn store(s: Structure) -> TokenStream {
     let keys = filtered_fields
         .iter()
         .map(|(field, _)| quote!(&self.#field));
-    let key_iter = quote!(#subxt::KeyIter<T, #ident<#(#params),*>>);
+    let key_iter = quote!(#subxt::KeyIter<T, (), #ident<#(#params),*>>);
 
     quote! {
         impl#generics #subxt::Store<T> for #ident<#(#params),*> {
@@ -156,7 +157,8 @@ pub fn store(s: Structure) -> TokenStream {
             ) -> core::pin::Pin<Box<dyn core::future::Future<Output = Result<#key_iter, #subxt::Error>> + Send + 'a>>;
         }
 
-        impl<T: #subxt::Runtime + #module> #store_trait<T> for #subxt::Client<T> {
+        // TODO: C: #jsonrpsee::traits::Client
+        impl<T: #subxt::Runtime + #module> #store_trait<T> for #subxt::Client<T, ()> {
             fn #store<'a>(
                 &'a self,
                 #args
