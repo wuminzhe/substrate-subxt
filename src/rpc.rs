@@ -63,7 +63,6 @@ use sp_rpc::{
 use sp_runtime::{
     generic::{
         Block,
-        SignedBlock,
     },
     traits::Hash,
 };
@@ -88,6 +87,19 @@ use crate::{
         SystemEvents,
     },
 };
+
+pub type ConsensusEngineId = [u8; 4];
+pub type EncodedJustification = Vec<u8>;
+type Justification = (ConsensusEngineId, EncodedJustification);
+type Justifications = Vec<Justification>;
+
+#[derive(PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignedBlock<Block> {
+    pub block: Block,
+    pub justifications: Option<Justifications>,
+}
 
 pub type ChainBlock<T> =
     SignedBlock<Block<<T as System>::Header, <T as System>::Extrinsic>>;
@@ -296,7 +308,6 @@ impl<T: Runtime> Rpc<T> {
     ) -> Result<Option<StorageData>, Error> {
         let params = &[to_json_value(key)?, to_json_value(hash)?];
         let data = self.client.request("state_getStorage", params).await?;
-        log::debug!("state_getStorage {:?}", data);
         Ok(data)
     }
 
@@ -317,7 +328,6 @@ impl<T: Runtime> Rpc<T> {
             to_json_value(hash)?,
         ];
         let data = self.client.request("state_getKeysPaged", params).await?;
-        log::debug!("state_getKeysPaged {:?}", data);
         Ok(data)
     }
 
