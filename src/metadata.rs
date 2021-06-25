@@ -177,13 +177,8 @@ pub struct ModuleMetadata {
 
 impl ModuleMetadata {
     pub fn storage(&self, key: &'static str) -> Result<&StorageMetadata, MetadataError> {
-        let key_2 = if key.starts_with("Mmr") {
-            key.replace("Mmr", "MMR")
-        } else {
-            key.to_string()
-        };
         self.storage
-            .get(&key_2)
+            .get(key)
             .ok_or(MetadataError::StorageNotFound(key))
     }
 
