@@ -179,6 +179,10 @@ impl ModuleMetadata {
     pub fn storage(&self, key: &'static str) -> Result<&StorageMetadata, MetadataError> {
         self.storage
             .get(key)
+            .or_else(|| {
+                let key_2 = key.replace("Mmr", "MMR");
+                self.storage.get(&key_2)
+            })
             .ok_or(MetadataError::StorageNotFound(key))
     }
 

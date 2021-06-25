@@ -50,7 +50,6 @@ use codec::{
     Codec,
     Decode,
 };
-use frame_metadata::StorageEntryModifier;
 use futures::future;
 use jsonrpsee_http_client::HttpClientBuilder;
 use jsonrpsee_ws_client::{
